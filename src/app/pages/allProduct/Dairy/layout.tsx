@@ -1,19 +1,17 @@
-"use client";
-
 import Footer from "@/app/components/Footer";
 import Header from "@/app/components/Header";
-import MainUiPr from "./UI/page";
+import React from "react";
 
-const AllProduct = () => {
+const layoutDairyCard = ({ children }: { children: React.ReactNode }) => {
   return (
     <>
       <Header />
 
-      <MainUiPr />
+      {children}
 
       <Footer />
     </>
   );
 };
 
-export default AllProduct;
+export default layoutDairyCard;
