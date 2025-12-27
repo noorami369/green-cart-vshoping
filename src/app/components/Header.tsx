@@ -1,10 +1,35 @@
 "use client";
 import React, { useState } from "react";
 import Link from "next/link";
+import { useMutation } from "@tanstack/react-query";
+import instance from "@/api/axios";
 
 const Header = () => {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
+
+  type RegisterTtpe = {
+    email: string;
+    name: string;
+    password: string;
+  };
+
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
+
+  const { mutate, data, isSuccess } = useMutation({
+    mutationFn: async (newUser: RegisterTtpe) => {
+      const { data } = await instance.post("/api/user/register", newUser);
+      return data;
+    },
+    onSuccess: (data) => {
+      // وقتی API موفق بود، پیام نمایش بده
+      setMessage("Hello");
+      setIsLoginOpen(false); // اگه بخوای فرم هم بسته بشه
+    },
+  });
 
   return (
     <>
@@ -78,6 +103,8 @@ const Header = () => {
                   className="border border-gray-200 rounded w-full p-2 mt-1 outline-primary text-[14px]"
                   type="text"
                   placeholder="type here"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
                 />
               </div>
             )}
@@ -88,6 +115,8 @@ const Header = () => {
                 className="border border-gray-200 rounded w-full p-2 mt-1 outline-primary text-[14px]"
                 type="email"
                 placeholder="type here"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
             </div>
 
@@ -97,6 +126,8 @@ const Header = () => {
                 className="border border-gray-200 rounded w-full p-2 mt-1 outline-primary text-[14px]"
                 type="password"
                 placeholder="type here"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
               />
             </div>
 
@@ -115,10 +146,17 @@ const Header = () => {
             </p>
 
             <button
-              onClick={() =>
-                console.log(
-                  authMode === "login" ? "Login clicked" : "Signup clicked"
-                )
+              onClick={
+                () => {
+                  if (authMode === "signup") {
+                    mutate({ name, email, password });
+                  } else {
+                    mutate({ email, password } as any);
+                  }
+                }
+                // console.log(
+                //   authMode === "login" ? "Login clicked" : "Signup clicked"
+                // )
               }
               className="w-full mt-4 bg-[#4fbf8b] text-white py-2 px-4 rounded text-[14px] cursor-pointer"
             >
