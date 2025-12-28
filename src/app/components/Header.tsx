@@ -2,37 +2,48 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useMutation } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
 import instance from "@/api/axios";
+
+type RegisterType = {
+  name?: string;
+  email: string;
+  password: string;
+};
 
 const Header = () => {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
 
-  type RegisterTtpe = {
-    email: string;
-    name: string;
-    password: string;
-  };
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<RegisterType>();
 
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [message, setMessage] = useState("");
-
-  const { mutate, data, isSuccess } = useMutation({
-    mutationFn: async (newUser: RegisterTtpe) => {
+  const { mutate } = useMutation({
+    mutationFn: async (newUser: RegisterType) => {
       const { data } = await instance.post("/api/user/register", newUser);
       return data;
     },
-    onSuccess: (data) => {
-      // وقتی API موفق بود، پیام نمایش بده
-      setMessage("Hello");
-      setIsLoginOpen(false); // اگه بخوای فرم هم بسته بشه
+    onSuccess: () => {
+      reset();
+      setIsLoginOpen(false);
     },
   });
 
+  const onSubmit = (data: RegisterType) => {
+    if (authMode === "signup") {
+      mutate(data);
+    } else {
+      mutate({ email: data.email, password: data.password });
+    }
+  };
+
   return (
     <>
+      {/* HEADER */}
       <div className="flex items-center justify-between px-6 md:px-16 lg:px-24 xl:px-32 py-4 border-b border-gray-300">
         <img
           className="cursor-pointer w-38 h-[34.54px]"
@@ -41,47 +52,32 @@ const Header = () => {
         />
 
         <div className="hidden md:flex items-center gap-8">
-          <button className="border border-gray-300 px-3 py-1 rounded-full text-xs cursor-pointer opacity-80 leading-1.7">
+          <button className="border border-gray-300 px-3 py-1 rounded-full text-xs cursor-pointer opacity-80">
             Seller Dashboard
           </button>
 
-          <ul className="*:cursor-pointer flex gap-8 *:leading-1.5">
+          <ul className="flex gap-8">
             <Link href="/">
-              <li className="active">Home</li>
+              <li className="cursor-pointer">Home</li>
             </Link>
             <Link href="/pages/allProduct">
-              <li>All Product</li>
+              <li className="cursor-pointer">All Product</li>
             </Link>
           </ul>
-
-          <div className="flex items-center text-sm gap-2 border border-gray-300 px-3 rounded-full max-lg:hidden">
-            <input
-              type="text"
-              className="py-1.5 w-full bg-transparent outline-none placeholder-gray-500 leading-1.5"
-              placeholder="Search products"
-            />
-            <img className="w-4 h-4" src="/search-icon.svg" alt="" />
-          </div>
-
-          <div className="relative cursor-pointer">
-            <img className="w-6 opacity-80" src="/shopping-cart.svg" alt="" />
-            <button className="absolute -top-2 -right-3 text-xs text-white bg-[#4fbf8b] w-4.5 h-4.5 rounded-full">
-              0
-            </button>
-          </div>
 
           <button
             onClick={() => {
               setAuthMode("login");
               setIsLoginOpen(true);
             }}
-            className="cursor-pointer px-8 py-2 bg-[#4fbf8b] hover:bg-[#44AE7C] transition text-white rounded-full"
+            className="px-8 py-2 bg-[#4fbf8b] text-white rounded-full"
           >
             Login
           </button>
         </div>
       </div>
 
+      {/* MODAL */}
       {isLoginOpen && (
         <div
           onClick={() => setIsLoginOpen(false)}
@@ -89,49 +85,77 @@ const Header = () => {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="flex flex-col gap-4 m-auto items-start p-8 py-12 min-w-80 sm:min-w-88 rounded-lg shadow-xl border border-gray-200 bg-white"
+            className="flex flex-col gap-4 p-8 py-12 min-w-80 rounded-lg bg-white"
           >
             <h2 className="text-2xl font-medium m-auto">
               <span className="text-[#4fbf8b]">User</span>{" "}
               {authMode === "login" ? "Login" : "Signup"}
             </h2>
 
+            {/* NAME (SIGNUP ONLY) */}
             {authMode === "signup" && (
               <div className="w-full">
                 <p className="text-[14px]">Name</p>
                 <input
-                  className="border border-gray-200 rounded w-full p-2 mt-1 outline-primary text-[14px]"
+                  className={`border rounded w-full p-2 mt-1 text-[14px] ${
+                    errors.name ? "border-red-500" : "border-gray-200"
+                  }`}
                   type="text"
                   placeholder="type here"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  {...register("name", {
+                    required: "Please fill out this field.",
+                  })}
                 />
+                {errors.name && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.name.message}
+                  </p>
+                )}
               </div>
             )}
 
+            {/* EMAIL */}
             <div className="w-full">
               <p className="text-[14px]">Email</p>
               <input
-                className="border border-gray-200 rounded w-full p-2 mt-1 outline-primary text-[14px]"
+                className={`border rounded w-full p-2 mt-1 text-[14px] ${
+                  errors.email ? "border-red-500" : "border-gray-200"
+                }`}
                 type="email"
                 placeholder="type here"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                {...register("email", {
+                  required: "Please fill out this field.",
+                })}
               />
+              {errors.email && (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.email.message}
+                </p>
+              )}
             </div>
 
+            {/* PASSWORD */}
             <div className="w-full">
               <p className="text-[14px]">Password</p>
               <input
-                className="border border-gray-200 rounded w-full p-2 mt-1 outline-primary text-[14px]"
+                className={`border rounded w-full p-2 mt-1 text-[14px] ${
+                  errors.password ? "border-red-500" : "border-gray-200"
+                }`}
                 type="password"
                 placeholder="type here"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                {...register("password", {
+                  required: "Please fill out this field.",
+                })}
               />
+              {errors.password && (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.password.message}
+                </p>
+              )}
             </div>
 
-            <p className="*:text-[14px] flex gap-1 items-end">
+            {/* SWITCH MODE */}
+            <p className="text-[14px] flex gap-1">
               {authMode === "login"
                 ? "Create an account?"
                 : "Already have an account?"}
@@ -145,20 +169,10 @@ const Header = () => {
               </span>
             </p>
 
+            {/* SUBMIT */}
             <button
-              onClick={
-                () => {
-                  if (authMode === "signup") {
-                    mutate({ name, email, password });
-                  } else {
-                    mutate({ email, password } as any);
-                  }
-                }
-                // console.log(
-                //   authMode === "login" ? "Login clicked" : "Signup clicked"
-                // )
-              }
-              className="w-full mt-4 bg-[#4fbf8b] text-white py-2 px-4 rounded text-[14px] cursor-pointer"
+              onClick={handleSubmit(onSubmit)}
+              className="w-full mt-4 bg-[#4fbf8b] text-white py-2 rounded text-[14px]"
             >
               {authMode === "login" ? "Login" : "Create Account"}
             </button>
